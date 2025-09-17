@@ -13,21 +13,21 @@ You can download the code and compile the binary with Go. Alternatively, a
 Docker container is available via the Docker Hub:
 
 ```text
-$ docker pull sethvargo/vault-init
+$ docker pull ghcr.io/3lvia/vault-init
 ```
 
 To use this as part of a Kubernetes Vault Deployment:
 
 ```yaml
 containers:
-- name: vault-init
-  image: registry.hub.docker.com/sethvargo/vault-init:0.1.2
-  imagePullPolicy: Always
-  env:
-  - name: GCS_BUCKET_NAME
-    value: my-gcs-bucket
-  - name: KMS_KEY_ID
-    value: projects/my-project/locations/my-location/cryptoKeys/my-key
+  - name: vault-init
+    image: ghcr.io/3lvia/vault-init:latest
+    imagePullPolicy: Always
+    env:
+      - name: GCS_BUCKET_NAME
+        value: my-gcs-bucket
+      - name: KMS_KEY_ID
+        value: projects/my-project/locations/my-location/cryptoKeys/my-key
 ```
 
 ## Configuration
@@ -42,10 +42,6 @@ The `vault-init` service supports the following environment variables for config
 
 - `KMS_KEY_ID` - The Google Cloud KMS key ID used to encrypt and decrypt the
   vault master key and root token.
-
-- `VAULT_SECRET_SHARES` (5) - The number of human shares to create.
-
-- `VAULT_SECRET_THRESHOLD` (3) - The number of human shares required to unseal.
 
 - `VAULT_AUTO_UNSEAL` (true) - Use Vault 1.0 native auto-unsealing directly. You must
   set the seal configuration in Vault's configuration.
@@ -70,6 +66,9 @@ The `vault-init` service supports the following environment variables for config
 
 - `VAULT_TLS_SERVER_NAME` ("") - Custom SNI hostname to use when validating TLS
   connections to Vault.
+
+- `VAULT_FORCE_REINIT` (false) - Force reinitialization of Vault if already
+  initialized. This will overwrite any existing keys and tokens in the GCS bucket.
 
 ### Example Values
 

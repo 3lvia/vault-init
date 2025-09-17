@@ -101,6 +101,8 @@ func main() {
 
 	vaultServerName := stringFromEnv("VAULT_TLS_SERVER_NAME", "")
 
+	vaultForceReinit := boolFromEnv("VAULT_FORCE_REINIT", false)
+
 	checkInterval := durFromEnv("CHECK_INTERVAL", 10*time.Second)
 
 	gcsBucketName = os.Getenv("GCS_BUCKET_NAME")
@@ -176,8 +178,24 @@ func main() {
 		switch response.StatusCode {
 		case 200:
 			log.Println("Vault is initialized and unsealed.")
+			if vaultForceReinit {
+				log.Println("Forcing re-initialization...")
+				initialize()
+				if !vaultAutoUnseal {
+					log.Println("Unsealing...")
+					unseal()
+				}
+			}
 		case 429:
 			log.Println("Vault is unsealed and in standby mode.")
+			if vaultForceReinit {
+				log.Println("Forcing re-initialization...")
+				initialize()
+				if !vaultAutoUnseal {
+					log.Println("Unsealing...")
+					unseal()
+				}
+			}
 		case 501:
 			log.Println("Vault is not initialized.")
 			log.Println("Initializing...")
