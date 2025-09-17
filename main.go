@@ -12,7 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -48,8 +48,6 @@ var (
 
 // InitRequest holds a Vault init request.
 type InitRequest struct {
-	SecretShares      int `json:"secret_shares"`
-	SecretThreshold   int `json:"secret_threshold"`
 	StoredShares      int `json:"stored_shares"`
 	RecoveryShares    int `json:"recovery_shares"`
 	RecoveryThreshold int `json:"recovery_threshold"`
@@ -85,9 +83,6 @@ func main() {
 	if vaultAddr == "" {
 		vaultAddr = "https://127.0.0.1:8200"
 	}
-
-	vaultSecretShares = intFromEnv("VAULT_SECRET_SHARES", 5)
-	vaultSecretThreshold = intFromEnv("VAULT_SECRET_THRESHOLD", 3)
 
 	vaultInsecureSkipVerify := boolFromEnv("VAULT_SKIP_VERIFY", false)
 
@@ -218,8 +213,6 @@ func main() {
 
 func initialize() {
 	initRequest := InitRequest{
-		SecretShares:      vaultSecretShares,
-		SecretThreshold:   vaultSecretThreshold,
 		StoredShares:      vaultStoredShares,
 		RecoveryShares:    vaultRecoveryShares,
 		RecoveryThreshold: vaultRecoveryThreshold,
@@ -232,7 +225,7 @@ func initialize() {
 	}
 
 	r := bytes.NewReader(initRequestData)
-	request, err := http.NewRequest("PUT", vaultAddr+"/v1/sys/init", r)
+	request, err := http.NewRequest("POST", vaultAddr+"/v1/sys/init", r)
 	if err != nil {
 		log.Println(err)
 		return
@@ -245,7 +238,7 @@ func initialize() {
 	}
 	defer response.Body.Close()
 
-	initRequestResponseBody, err := ioutil.ReadAll(response.Body)
+	initRequestResponseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Println(err)
 		return
@@ -325,7 +318,7 @@ func unseal() {
 
 	defer unsealKeysObject.Close()
 
-	unsealKeysData, err := ioutil.ReadAll(unsealKeysObject)
+	unsealKeysData, err := io.ReadAll(unsealKeysObject)
 	if err != nil {
 		log.Println(err)
 		return
@@ -393,7 +386,7 @@ func unsealOne(key string) (bool, error) {
 		return false, fmt.Errorf("unseal: non-200 status code: %d", response.StatusCode)
 	}
 
-	unsealRequestResponseBody, err := ioutil.ReadAll(response.Body)
+	unsealRequestResponseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		return false, err
 	}
@@ -415,7 +408,7 @@ func processTLSConfig(cfg *tls.Config, serverName, caCert, caPath string) error 
 
 	// If a CA cert is provided, trust only that cert
 	if caCert != "" {
-		b, err := ioutil.ReadFile(caCert)
+		b, err := os.ReadFile(caCert)
 		if err != nil {
 			return fmt.Errorf("failed to read CA cert: %w", err)
 		}
@@ -431,7 +424,7 @@ func processTLSConfig(cfg *tls.Config, serverName, caCert, caPath string) error 
 
 	// If a directory is provided, trust only the certs in that directory
 	if caPath != "" {
-		files, err := ioutil.ReadDir(caPath)
+		files, err := os.ReadDir(caPath)
 		if err != nil {
 			return fmt.Errorf("failed to read CA path: %w", err)
 		}
@@ -439,7 +432,7 @@ func processTLSConfig(cfg *tls.Config, serverName, caCert, caPath string) error 
 		root := x509.NewCertPool()
 
 		for _, f := range files {
-			b, err := ioutil.ReadFile(f.Name())
+			b, err := os.ReadFile(f.Name())
 			if err != nil {
 				return fmt.Errorf("failed to read cert: %w", err)
 			}
