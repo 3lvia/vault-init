@@ -101,8 +101,6 @@ func main() {
 
 	vaultServerName := stringFromEnv("VAULT_TLS_SERVER_NAME", "")
 
-	vaultForceReinit := boolFromEnv("VAULT_FORCE_REINIT", false)
-
 	checkInterval := durFromEnv("CHECK_INTERVAL", 10*time.Second)
 
 	gcsBucketName = os.Getenv("GCS_BUCKET_NAME")
@@ -178,26 +176,13 @@ func main() {
 		switch response.StatusCode {
 		case 200:
 			log.Println("Vault is initialized and unsealed.")
-			if vaultForceReinit {
-				log.Println("Forcing re-initialization...")
-				initialize()
-				if !vaultAutoUnseal {
-					log.Println("Unsealing...")
-					unseal()
-				}
-			}
+			log.Printf("Response: %+v", response)
 		case 429:
 			log.Println("Vault is unsealed and in standby mode.")
-			if vaultForceReinit {
-				log.Println("Forcing re-initialization...")
-				initialize()
-				if !vaultAutoUnseal {
-					log.Println("Unsealing...")
-					unseal()
-				}
-			}
+			log.Printf("Response: %+v", response)
 		case 501:
 			log.Println("Vault is not initialized.")
+			log.Printf("Response: %+v", response)
 			log.Println("Initializing...")
 			initialize()
 			if !vaultAutoUnseal {
@@ -206,12 +191,14 @@ func main() {
 			}
 		case 503:
 			log.Println("Vault is sealed.")
+			log.Printf("Response: %+v", response)
 			if !vaultAutoUnseal {
 				log.Println("Unsealing...")
 				unseal()
 			}
 		default:
 			log.Printf("Vault is in an unknown state. Status code: %d", response.StatusCode)
+			log.Printf("Response: %+v", response)
 		}
 
 		if checkInterval <= 0 {
@@ -264,6 +251,7 @@ func initialize() {
 
 	if response.StatusCode != 200 {
 		log.Printf("init: non 200 status code: %d", response.StatusCode)
+		log.Printf("Response: %+v", initRequestResponseBody)
 		return
 	}
 
@@ -401,7 +389,7 @@ func unsealOne(key string) (bool, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return false, fmt.Errorf("unseal: non-200 status code: %d", response.StatusCode)
+		return false, fmt.Errorf("unseal: non-200 status code: %d.", response.StatusCode)
 	}
 
 	unsealRequestResponseBody, err := io.ReadAll(response.Body)

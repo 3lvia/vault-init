@@ -67,9 +67,6 @@ The `vault-init` service supports the following environment variables for config
 - `VAULT_TLS_SERVER_NAME` ("") - Custom SNI hostname to use when validating TLS
   connections to Vault.
 
-- `VAULT_FORCE_REINIT` (false) - Force reinitialization of Vault if already
-  initialized. This will overwrite any existing keys and tokens in the GCS bucket.
-
 ### Example Values
 
 ```
