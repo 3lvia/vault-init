@@ -389,6 +389,7 @@ func unsealOne(key string) (bool, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
+		log.Printf("Response: %+v", response)
 		return false, fmt.Errorf("unseal: non-200 status code: %d.", response.StatusCode)
 	}
 
